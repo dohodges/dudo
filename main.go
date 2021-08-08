@@ -23,8 +23,6 @@ func main() {
 		knownDice += v
 	}
 
-	fmt.Println(known)
-
 	var unknownDice int
 	if flag.NArg() != 1 {
 		fmt.Fprintf(os.Stderr, "specify dice count\n")
