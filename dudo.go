@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"sort"
 )
 
@@ -101,16 +102,16 @@ func Exactly(bid Bid, dice int, known []Die) float64 {
 	}
 	q := float64(1) - p
 
-	return math.Pow(p, float64(bid.Count)) * math.Pow(q, float64(dice - bid.Count)) * float64(choose(dice, bid.Count))
+	return math.Pow(p, float64(bid.Count)) * math.Pow(q, float64(dice - bid.Count)) * float64(choose(dice, bid.Count).Uint64())
 }
 
-func choose(n, k int) int {
-	return int(factorial(n)/(factorial(k)*factorial(n-k)))
+func choose(n, k int) *big.Int {
+	return new(big.Int).Div(factorial(n, n-k+1), factorial(k, 1))
 }
 
-func factorial(n int) uint64 {
-	if n > 0 {
-		return uint64(n) * factorial(n-1)
+func factorial(n, k int) *big.Int {
+	if n > k {
+		return new(big.Int).Mul(big.NewInt(int64(n)), factorial(n-1, k))
 	}
-	return 1
+	return big.NewInt(int64(k))
 }
