@@ -7,7 +7,6 @@ import (
 	"sort"
 )
 
-
 type Die uint8
 
 const (
@@ -73,7 +72,7 @@ func EachBid(dice int) <-chan Bid {
 		bids := make([]Bid, 0, 6*dice)
 		for c := 1; c <= dice; c++ {
 			for v := Ace; v <= Six; v++ {
-				bids = append(bids, Bid{c,v})
+				bids = append(bids, Bid{c, v})
 			}
 		}
 		sort.Slice(bids, func(i, j int) bool {
@@ -87,22 +86,40 @@ func EachBid(dice int) <-chan Bid {
 	return ch
 }
 
-func AtLeast(bid Bid, dice int, known []Die) float64 {
+func AtLeast(bid Bid, unknownDice int, known map[Die]int) float64 {
+	knownDice := 0
+	for _, c := range known {
+		knownDice += c
+	}
+
 	var p float64
-	for c := bid.Count; c <= dice; c++ {
-		p += Exactly(Bid{c,bid.Value}, dice, known)
+	for c := bid.Count; c <= unknownDice+knownDice; c++ {
+		p += Exactly(Bid{c, bid.Value}, unknownDice, known)
+		if p >= 1.0 {
+			return 1.0
+		}
 	}
 	return p
 }
 
-func Exactly(bid Bid, dice int, known []Die) float64 {
-	p := float64(2)/float64(6)
-	if bid.Value == Ace {
-		p = float64(1)/float64(6)
+func Exactly(bid Bid, unknownDice int, known map[Die]int) float64 {
+	need := bid
+	need.Count -= known[need.Value]
+	if need.Value != Ace {
+		need.Count -= known[Ace]
+	}
+
+	if need.Count <= 0 {
+		return 1.0
+	}
+
+	p := float64(2) / float64(6)
+	if need.Value == Ace {
+		p = float64(1) / float64(6)
 	}
 	q := float64(1) - p
 
-	return math.Pow(p, float64(bid.Count)) * math.Pow(q, float64(dice - bid.Count)) * float64(choose(dice, bid.Count).Uint64())
+	return math.Pow(p, float64(need.Count)) * math.Pow(q, float64(unknownDice-need.Count)) * float64(choose(unknownDice, need.Count).Uint64())
 }
 
 func choose(n, k int) *big.Int {
